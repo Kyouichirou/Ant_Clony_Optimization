@@ -84,20 +84,44 @@ class TSP:
         self._window.title(s)
 
     # 将节点按order顺序连线
-    def _draw_line(self, order):
-        # 删除
+    def _draw_line(self, order_paths):
+        # 删除所有的线条
+        # Delete each of the items given by the first (and only) value of args (this should be an item id or tag).
         self._canvas.delete("line")
+        '''
+        def test(x, y) :            
+            print(str(x) + '-' + str(y))
+            return y
 
-        def line2(i1, i2):
-            p1, p2 = self._nodes_coordinate[i1], self._nodes_coordinate[i2]
-            self._canvas.create_line(p1, p2,
-                                     fill=self._lines_color[self._path_draw_times % len(self._lines_color)],
+        reduce(test, [1,2,3,4,5], 5)
+        打印内容:
+            5-1
+            1-2
+            2-3
+            3-4
+            4-5
+        通过reduce的方式, 实现各个城市坐标的绘制
+        '''
+        # 每次绘制图都采用不一样的颜色, 方便查看图的变化
+        color = self._lines_color[self._path_draw_times % len(self._lines_color)]
+
+        def _draw(index_a, index_b):
+            node_a, node_b = self._nodes_coordinate[index_a], self._nodes_coordinate[index_b]
+            # Draw a line. Returns the item id.
+            # https://tkdocs.com/shipman/create_line.html
+            self._canvas.create_line(node_a,
+                                     node_b,
+                                     # 颜色
+                                     fill=color,
+                                     # 类型
                                      tags="line"
                                      )
-            return i2
+            return index_b
 
-        # order[-1]为初始值
-        reduce(line2, order, order[-1])
+        # reduce(func, iter_objs, initial_value)
+        reduce(_draw, order_paths, order_paths[-1])
+        # 更新画布
+        self._canvas.update()
 
     # 清除画布
     def _clear_canvas(self):
@@ -113,6 +137,7 @@ class TSP:
         for city in self._sim_cities:
             x, y = city
             # 保存各个城市的位置坐标 -> 用于后续的路线的绘制
+            # canvas.create_line() 不支持numpy.array数据类型, 转为常规的元组坐标
             self._nodes_coordinate.append((x, y))
             self._canvas.create_oval(x - self._radius,
                                      y - self._radius,
@@ -185,13 +210,15 @@ class TSP:
                     self._iter_max = self._iter_max_times
             self._chart_data.append((self._iter_times, self._min_distance, np.mean(avg_dis)))
             print(
-                f"iter times：{self._iter_times}; current best distance：{self._min_distance}; current max_iter: {self._iter_max}")
+                f"iter times：{self._iter_times}; "
+                f"current best distance：{self._min_distance}; "
+                f"current max_iter: {self._iter_max}")
             # 重新绘制新的线路图
-            title = f"tsp-aco:, iter times: {self._iter_times}; current best distance：{self._min_distance}; current max_iter: {self._iter_max}"
+            title = f"tsp-aco:, iter times: {self._iter_times}; " \
+                    f"current best distance：{self._min_distance}; " \
+                    f"current max_iter: {self._iter_max}"
             if is_need_draw:
                 self._draw_line(self._best_path)
-                # 更新画布
-                self._canvas.update()
                 title = title + f'; draw times: {self._path_draw_times}'
                 self._path_draw_times += 1
             else:
@@ -201,7 +228,8 @@ class TSP:
                     print(f'the best path, {self._min_distance}:\n' + '->'.join(
                         str(e) for e in self._best_path) + '\ncities coordinate:\n')
                     self._set_title(
-                        f'TSP-ACO Demo: iteration has finished, the best distance: {self._min_distance}(draw times:{self._path_draw_times});'
+                        f'TSP-ACO Demo: iteration has finished, '
+                        f'the best distance: {self._min_distance}(draw times:{self._path_draw_times});'
                         f' iter times: {self._iter_times}')
                     pprint.pprint(self._sim_cities)
                     self._iter_finished = True
