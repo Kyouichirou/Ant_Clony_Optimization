@@ -207,7 +207,6 @@ class TSP:
                     self._min_distance = dis
                     # 将路径deep_copy到最佳路径保存, 不是直接"="
                     self._best_path = [e for e in ant.visited_path]
-                    self._iter_max = self._iter_max_times
             self._chart_data.append((self._iter_times, self._min_distance, np.mean(avg_dis)))
             print(
                 f"iter times：{self._iter_times}; "
@@ -221,6 +220,7 @@ class TSP:
                 self._draw_line(self._best_path)
                 title = title + f'; draw times: {self._path_draw_times}'
                 self._path_draw_times += 1
+                self._iter_max = self._iter_max_times
             else:
                 # 阈值, 当最小值一直没有更小的值出现, 迭代300次后退出迭代
                 self._iter_max -= 1
