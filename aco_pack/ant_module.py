@@ -13,7 +13,7 @@ class Ant:
         # 移动次数
         self._move_count = 0
         # 总距离
-        self.total_distance = 0
+        self._total_distance = 0
         # 当前城市
         self._current_city = 0
         #  城市数量
@@ -23,24 +23,44 @@ class Ant:
         # 信息素分布图
         self._pheromone_graph = pheromone_graph
         # 已访问路径
-        self.visited_path = None
+        self._visited_path = None
         # 访问的城市的状态
         self._visited_cities_state = None
+        # ETA启发函数
+        self._ETA = lambda distance: 1 / distance
+        # 随机城市
+        self._random_city = lambda: random.randint(0, city_num - 1)
         self._initial()
+
+    @property
+    def visited_path(self):
+        return self._visited_path
+
+    @property
+    def total_distance(self):
+        return self._total_distance
+
+    @property
+    def ant_pheromone(self):
+        return self._pheromone_graph
+
+    @ant_pheromone.setter
+    def ant_pheromone(self, pheromone):
+        self._pheromone_graph = pheromone
 
     # 初始数据
     def _initial(self):
         # 蚂蚁访问的路径
-        self.visited_path = []
+        self._visited_path = []
         # 当前路径的总距离
-        self.total_distance = 0
+        self._total_distance = 0
         # 探索城市的状态, 初始化, 全部设置为False, 全部没有访问过
         self._visited_cities_state = [False] * self._city_num
         # 随机初始化出发的城市
-        first_index = random.randint(0, self._city_num - 1)
+        first_index = self._random_city()
         # 当前城市
         self._current_city = first_index
-        self.visited_path.append(first_index)
+        self._visited_path.append(first_index)
         # 将出发的城市标记为访问过
         self._visited_cities_state[first_index] = True
         self._move_count = 1
@@ -65,6 +85,7 @@ class Ant:
     def _get_next_city(self) -> int:
         next_city = -1
         # 存储去下个城市的概率
+        # 随机城市-异类蚂蚁(而不是单纯依赖信息素)
         selected_city_prob = [0.0] * self._city_num
         # 获取去下一个城市的概率
         for i in range(self._city_num):
@@ -72,15 +93,14 @@ class Ant:
                 try:
                     # 计算概率: 与信息素浓度成正比(越多的蚂蚁访问, 则优先访问该路径), 与距离成反比
                     # 启发函数ETA = 1 / distance
-                    x = self._distance_graph[self._current_city][i]
+                    distance = self._distance_graph[self._current_city][i]
                     selected_city_prob[i] = pow(self._pheromone_graph[self._current_city][i], ALPHA) * pow(
-                        (1.0 / x), BETA)
+                        self._ETA(distance), BETA)
                 except ZeroDivisionError:
                     print(
                         f'warning, error on ant_id: {self._ant_id}; '
                         f'current city: {self._current_city}; city_index: {i}'
                     )
-                    self.error_flag = True
                     return -1
         total_prob = sum(selected_city_prob)
         if total_prob > 0.0:
@@ -88,30 +108,30 @@ class Ant:
         # 假如没有取得下一城市
         if next_city == -1:
             # 随机生成的下一个城市的
-            next_city = random.randint(0, self._city_num - 1)
+            next_city = self._random_city()
             # 找出没有访问过的城市
             while self._visited_cities_state[next_city]:
-                next_city = random.randint(0, self._city_num - 1)
+                next_city = self._random_city()
         # 返回下一个城市序号
         return next_city
 
     # 计算路径总距离(关键部分)
     def _cal_total_distance(self):
-        tmp_distance = 0.0
         start = 0
+        tmp_distance = 0.0
         for i in range(1, self._city_num):
-            start, end = self.visited_path[i], self.visited_path[i - 1]
+            start, end = self._visited_path[i], self._visited_path[i - 1]
             tmp_distance += self._distance_graph[start][end]
         # 回程
-        end = self.visited_path[0]
+        end = self._visited_path[0]
         tmp_distance += self._distance_graph[start][end]
-        self.total_distance = tmp_distance
+        self._total_distance = tmp_distance
 
     # 移动
     def _move(self, next_city: int):
-        self.visited_path.append(next_city)
+        self._visited_path.append(next_city)
         self._visited_cities_state[next_city] = True
-        self.total_distance += self._distance_graph[self._current_city][next_city]
+        self._total_distance += self._distance_graph[self._current_city][next_city]
         self._current_city = next_city
         self._move_count += 1
 
