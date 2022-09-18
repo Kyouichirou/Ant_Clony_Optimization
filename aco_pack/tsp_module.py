@@ -66,6 +66,7 @@ class TSP:
         )
         # 迭代次数-最小距离绘图
         self._chart_data = None
+        # 迭代完成
         self._iter_finished = False
 
     def _cal_distance_all_cities(self):
@@ -156,7 +157,7 @@ class TSP:
         self._lock.release()
 
     # 初始化
-    def _initial(self, e):
+    def _initial(self, event):
         print('aco init')
         self._change_running_state(False)
         # 清除掉当前画布的内容
@@ -177,14 +178,14 @@ class TSP:
         self._iter_finished = False
 
     # 退出程序
-    def _quit(self, e):
+    def _quit(self, event):
         self._change_running_state(False)
         self._window.destroy()
         print("aco exit")
         sys.exit()
 
     # 停止搜索
-    def _pause(self, e):
+    def _pause(self, event):
         print('aco pause')
         self._change_running_state(False)
 
@@ -243,7 +244,7 @@ class TSP:
             self._set_title('ant has paused')
 
     # 开始搜索(关键部分)
-    def _search_path(self, e):
+    def _search_path(self, event):
         # 开启线程
         # 关键节点, 这里在多模块调用执行, 如果不单独开启线程, tkinter界面会出现卡死的问题
         if not self._is_running:
@@ -266,9 +267,9 @@ class TSP:
                 tmp_pheromone[start][end] += Q / ant.total_distance
                 tmp_pheromone[end][start] = tmp_pheromone[start][end]
         # 更新全部城市路径信息浓度的分布
-        for i in range(self._city_num):
-            for j in range(self._city_num):
-                self._pheromone_graph[i][j] = self._pheromone_graph[i][j] * RHO + tmp_pheromone[i][j]
+        self._pheromone_graph = self._pheromone_graph * RHO + tmp_pheromone
+        for ant in self._ant_objs:
+            ant.ant_pheromone = self._pheromone_graph
 
     def _canvas_init(self, width, height):
         # 初始化tk画布
@@ -294,7 +295,7 @@ class TSP:
         statusbar.pack(side=tk.BOTTOM, fill=tk.X)
         print('canvas init')
 
-    def _show_iteration(self, e):
+    def _show_iteration(self, event):
         if self._iter_finished and self._chart_data:
             show_chart(self._chart_data)
 
