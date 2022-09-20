@@ -7,7 +7,7 @@ from .constants_module import ALPHA, BETA
 # @description: 蚂蚁模块
 
 class Ant:
-    def __init__(self, ant_id: int, city_num: int, pheromone_graph, distance_graph):
+    def __init__(self, ant_id: int, city_num: int, pheromone_matrix, distance_matrix):
         # 蚂蚁的id
         self._ant_id = ant_id
         # 移动次数
@@ -19,9 +19,9 @@ class Ant:
         #  城市数量
         self._city_num = city_num
         # 城市距离图
-        self._distance_graph = distance_graph
+        self._distance_matrix = distance_matrix
         # 信息素分布图
-        self._pheromone_graph = pheromone_graph
+        self._pheromone_matrix = pheromone_matrix
         # 已访问路径
         self._visited_path = None
         # 访问的城市的状态
@@ -42,11 +42,11 @@ class Ant:
 
     @property
     def ant_pheromone(self):
-        return self._pheromone_graph
+        return self._pheromone_matrix
 
     @ant_pheromone.setter
     def ant_pheromone(self, pheromone):
-        self._pheromone_graph = pheromone
+        self._pheromone_matrix = pheromone
 
     # 初始数据
     def _initial(self):
@@ -93,8 +93,8 @@ class Ant:
                 try:
                     # 计算概率: 与信息素浓度成正比(越多的蚂蚁访问, 则优先访问该路径), 与距离成反比
                     # 启发函数ETA = 1 / distance
-                    distance = self._distance_graph[self._current_city][i]
-                    selected_city_prob[i] = pow(self._pheromone_graph[self._current_city][i], ALPHA) * pow(
+                    distance = self._distance_matrix[self._current_city][i]
+                    selected_city_prob[i] = pow(self._pheromone_matrix[self._current_city][i], ALPHA) * pow(
                         self._ETA(distance), BETA)
                 except ZeroDivisionError:
                     print(
@@ -121,17 +121,17 @@ class Ant:
         tmp_distance = 0.0
         for i in range(1, self._city_num):
             start, end = self._visited_path[i], self._visited_path[i - 1]
-            tmp_distance += self._distance_graph[start][end]
+            tmp_distance += self._distance_matrix[start][end]
         # 回程
         end = self._visited_path[0]
-        tmp_distance += self._distance_graph[start][end]
+        tmp_distance += self._distance_matrix[start][end]
         self._total_distance = tmp_distance
 
     # 移动
     def _move(self, next_city: int):
         self._visited_path.append(next_city)
         self._visited_cities_state[next_city] = True
-        self._total_distance += self._distance_graph[self._current_city][next_city]
+        self._total_distance += self._distance_matrix[self._current_city][next_city]
         self._current_city = next_city
         self._move_count += 1
 
