@@ -2,12 +2,12 @@ __all__ = ['TSP']
 
 import os
 import sys
-import math
 import pprint
 import ctypes
 import threading
 import numpy as np
 import tkinter as tk
+from scipy import spatial
 from functools import reduce
 from .ant_module import Ant
 from .constants_module import RHO, Q
@@ -25,10 +25,10 @@ class TSP:
         self._ant_num = int(1.5 * self._city_num)
         # 模拟城市坐标
         self._sim_cities = sim_cities
-        # 信息素矩阵
-        self._pheromone_graph = None
         # 城市间距离矩阵
-        self._distance_graph = np.ones((self._city_num, self._city_num))
+        self._distance_matrix = None
+        # 信息素矩阵
+        self._pheromone_matrix = None
         # 绘制图表的圆点大小
         self._radius = 5
         # 绘制路径发生变化次数
@@ -36,6 +36,7 @@ class TSP:
         # 最佳路径
         self._best_path = None
         # tkinter窗体
+        self._canvas = None
         self._window = None
         # 用于控制最小距离的获取, 设置一个非常大的数
         self._min_distance = 0
@@ -70,14 +71,18 @@ class TSP:
         self._iter_finished = False
 
     def _cal_distance_all_cities(self):
-        for i in range(self._city_num):
-            for j in range(self._city_num):
-                # 城市距离, 三角函数 a ^ 2 + b ^ 2 = c ^ 2, d = c ^ 1/2
-                # power(data, 次幂) == **符号, 如果输出结果是整数, 则是整数
-                # math.power(), 默认转为浮点数, 不管结果是否为整数
-                tmp_distance = math.sqrt((self._sim_cities[i][0] - self._sim_cities[j][0]) ** 2 + (
-                        self._sim_cities[i][1] - self._sim_cities[j][1]) ** 2)
-                self._distance_graph[i][j] = tmp_distance
+        # scipy库中整合了各种距离的计算
+        # euclidean, 欧氏距离
+        # 另外一些距离, 曼哈顿距离, 汉明距离, 余弦距离, 闵式距离等
+        # metricstr or callable, optional
+        # The distance metric to use.
+        # If a string, the distance function can be
+        # ‘braycurtis’, ‘canberra’, ‘chebyshev’, ‘cityblock’, ‘correlation’,
+        # ‘cosine’, ‘dice’, ‘euclidean’, ‘hamming’, ‘jaccard’, ‘jensenshannon’,
+        # ‘kulczynski1’, ‘mahalanobis’, ‘matching’, ‘minkowski’, ‘rogerstanimoto’,
+        # ‘russellrao’, ‘seuclidean’, ‘sokalmichener’, ‘sokalsneath’, ‘sqeuclidean’, ‘yule’.
+        # https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.distance.cdist.html
+        self._distance_matrix = spatial.distance.cdist(self._sim_cities, self._sim_cities, metric='euclidean')
 
     # 调整窗体的内容
     # 更改标题
@@ -165,9 +170,9 @@ class TSP:
         # 绘制初始化各个城市的坐标
         self._draw_coordinate()
         # 初始化城市之间的信息素
-        self._pheromone_graph = np.ones((self._city_num, self._city_num))
+        self._pheromone_matrix = np.ones((self._city_num, self._city_num))
         # 初始化蚁群
-        self._ant_objs = [Ant(index, self._city_num, self._pheromone_graph, self._distance_graph) for index in
+        self._ant_objs = [Ant(index, self._city_num, self._pheromone_matrix, self._distance_matrix) for index in
                           range(self._ant_num)]
         # 初始化迭代次数, 绘制路径次数, 迭代次数, 最小距离
         self._iter_times = 1
@@ -267,9 +272,9 @@ class TSP:
                 tmp_pheromone[start][end] += Q / ant.total_distance
                 tmp_pheromone[end][start] = tmp_pheromone[start][end]
         # 更新全部城市路径信息浓度的分布
-        self._pheromone_graph = self._pheromone_graph * RHO + tmp_pheromone
+        self._pheromone_matrix = self._pheromone_matrix * RHO + tmp_pheromone
         for ant in self._ant_objs:
-            ant.ant_pheromone = self._pheromone_graph
+            ant.ant_pheromone = self._pheromone_matrix
 
     def _canvas_init(self, width, height):
         # 初始化tk画布
