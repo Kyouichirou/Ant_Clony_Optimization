@@ -115,22 +115,15 @@ class Ant:
         # 返回下一个城市序号
         return next_city
 
-    # 计算路径总距离(关键部分)
-    def _cal_total_distance(self):
-        start = 0
-        tmp_distance = 0.0
-        for i in range(1, self._city_num):
-            start, end = self._visited_path[i], self._visited_path[i - 1]
-            tmp_distance += self._distance_matrix[start][end]
-        # 回程
-        end = self._visited_path[0]
-        tmp_distance += self._distance_matrix[start][end]
-        self._total_distance = tmp_distance
+    # 计算最后两个节点的位置距离
+    def _cal_end_distance(self):
+        self._total_distance += self._distance_matrix[self._visited_path[self._city_num - 1]][self._visited_path[0]]
 
     # 移动
-    def _move(self, next_city: int):
+    def _move_next_city(self, next_city: int):
         self._visited_path.append(next_city)
         self._visited_cities_state[next_city] = True
+        # 累计每次移动位置的路径距离
         self._total_distance += self._distance_matrix[self._current_city][next_city]
         self._current_city = next_city
         self._move_count += 1
@@ -143,9 +136,10 @@ class Ant:
         while self._move_count < self._city_num:
             # 移动到下一个城市
             next_city = self._get_next_city()
+            # 如果返回 -1, 表示获取到异常的城市位置
             if next_city < 0:
                 return False
-            self._move(next_city)
-        # 计算路径总长度
-        self._cal_total_distance()
+            self._move_next_city(next_city)
+        # 计算最后节点的路径距离
+        self._cal_end_distance()
         return True
