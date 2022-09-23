@@ -14,7 +14,7 @@ def travel_start(city_num=50, max_iter=300):
     window_height = 900
     # 获取模拟的城市坐标
     sim_cities = simulation_city_data(city_num=city_num,
-                                      max_index=int(window_width * 0.95),
+                                      max_index=int(window_width * 0.98),
                                       limit_h=int(window_height * 0.95)
                                       )
     tsp = TSP(sim_cities, max_iter)
